@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>نجم الشمال – محاكي الرياض</title>
+<style>
+:root{--glass:rgba(8,20,32,.78);--line:rgba(80,230,170,.35);--tx:#eafff6;--ac:#22d39a;--red:#ff4d3d}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#a9c8e8;color:var(--tx);font-family:Tahoma,"Segoe UI",system-ui,sans-serif;overflow:hidden}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
+.g{background:var(--glass);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(8px)}
+.top{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;left:12px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.brand{padding:8px 14px}.brand b{font-size:20px;color:var(--ac)}.brand small{display:block;opacity:.8;font-size:11px}
+.chips{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.chip{padding:6px 12px;font-size:13px;font-weight:700}
+#alertb{background:var(--red);border-color:var(--red);opacity:0;transition:opacity .3s}
+#rep{position:fixed;left:12px;top:calc(env(safe-area-inset-top,0px) + 120px);width:230px;padding:12px;font-size:12.5px;line-height:1.9;opacity:0;transition:opacity .5s}
+#rep h3{margin:0 0 4px;color:var(--ac);font-size:14px}
+.lb{position:fixed;transform:translate(-50%,-100%);padding:3px 9px;font-size:12px;font-weight:700;pointer-events:none;opacity:0;transition:opacity .4s;white-space:nowrap}
+.panel{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);right:12px;left:12px;max-width:740px;margin:auto;padding:14px 16px}
+.panel h2{margin:0 0 4px;font-size:18px}.panel p{margin:0 0 10px;font-size:14px;line-height:1.7;opacity:.92}
+.bar{height:4px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden;margin-bottom:10px}
+#fillb{height:100%;width:0;background:var(--ac)}
+.row{display:flex;gap:6px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.dots{display:flex;gap:5px}.dots i{width:21px;height:21px;border-radius:50%;background:rgba(255,255,255,.12);font-style:normal;font-size:11px;display:grid;place-items:center;cursor:pointer;border:1px solid transparent}
+.dots i.on{background:var(--ac);color:#04221a;font-weight:700}.dots i.done{border-color:var(--ac)}
+button{background:rgba(34,211,154,.16);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:7px 13px;font:inherit;cursor:pointer}
+button:hover{background:rgba(34,211,154,.35)}
+</style>
+</head>
+<body>
+<div class="top"><div class="g brand"><b>نجم الشمال</b><small>NAJM AL-SHAMAL · محاكي الرياض · موقع الحادث</small></div>
+<div class="chips"><div class="g chip" id="bat">☀ طاقة المحطة 100%</div><div class="chip g" id="alertb">🚨 بلاغ حادث مروري</div></div></div>
+<div class="g" id="rep"><h3>تقرير نجم الأولي</h3>رقم البلاغ: NS-0001<br>الموقع: تقاطع رئيسي – الرياض<br>المركبات: ٢ · تصادم جانبي<br>الأضرار: أمامية (أ) / جانبية (ب)<br>زمن وصول الدرون: 00:42<br>المرفقات: مسح ثلاثي الأبعاد <span id="np"></span> نقطة</div>
+<div class="g lb" id="l1">المركبة أ – ضرر أمامي</div><div class="g lb" id="l2">المركبة ب – ضرر جانبي</div><div class="g lb" id="l3" style="background:rgba(160,20,10,.85)">نقطة التصادم</div>
+<div class="g panel"><h2 id="ttl"></h2><p id="dsc"></p><div class="bar"><div id="fillb"></div></div>
+<div class="row"><div class="dots" id="dots"></div><div><button id="prevb">السابق</button> <button id="playb">إيقاف</button> <button id="nextb">التالي</button></div></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=i=>document.getElementById(i);
+const STEPS=[
+["١. وقوع الحادث","تصادم مركبتين عند التقاطع، ويصل بلاغ آلي إلى مركز نجم."],
+["٢. استقبال البلاغ وفتح الألواح","تستقبل محطة «نجم الشمال» البلاغ، وتنفتح الألواح الشمسية كالبتلات لتكشف منصة الإقلاع."],
+["٣. رفع المنصة","ترتفع منصة الإقلاع إلى خارج المحطة استعداداً للإقلاع الآمن."],
+["٤. إقلاع الدرون","تدور المراوح ويرتفع الدرون عمودياً، وبطاريته ممتلئة بفضل الطاقة الشمسية."],
+["٥. الطيران إلى الموقع","يعبر الدرون سماء الرياض نحو موقع الحادث ويتموضع فوق التقاطع."],
+["٦. تشخيص الحادث","يدور الدرون حول الموقع ويمسح المركبتين مسحاً ثلاثي الأبعاد فتتكون سحابة نقاط للمشهد."],
+["٧. تحليل نقطة التصادم","يحدد النظام نقطة التصادم ووضع المركبتين ومواضع الأضرار."],
+["٨. تقرير نجم","يُرسل تقرير أولي مع المسح ثلاثي الأبعاد إلى مركز العمليات خلال ثوانٍ."],
+["٩. العودة والشحن","يعود الدرون ويهبط على المنصة، وتبقى الألواح مفتوحة لإعادة الشحن بالطاقة الشمسية ثم تُغلق."]];
+const D=[5,4,3.5,3,5,7,4,4.5,7],TOT=D.reduce((a,b)=>a+b),ST=D.map((_,i)=>D.slice(0,i).reduce((a,b)=>a+b,0));
+const E=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,C=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),V=(x,y,z)=>new THREE.Vector3(x,y,z);
+const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));document.body.prepend(R.domElement);
+const SC=new THREE.Scene(),SKY=0xa9c8e8;SC.background=new THREE.Color(SKY);SC.fog=new THREE.Fog(SKY,140,560);
+const cam=new THREE.PerspectiveCamera(55,1,.5,900);
+function rs(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',rs);rs();
+SC.add(new THREE.HemisphereLight(0xffffff,0xc8b48a,.95));
+const sun=new THREE.DirectionalLight(0xfff1d0,1.1);sun.position.set(80,120,60);SC.add(sun);
+let sd=11;const rnd=()=>(sd=(sd*16807)%2147483647)/2147483647;
+const wc=document.createElement('canvas');wc.width=64;wc.height=128;const x=wc.getContext('2d');x.fillStyle='#6f8cab';x.fillRect(0,0,64,128);
+for(let i=0;i<8;i++)for(let j=0;j<16;j++){x.fillStyle=['#bcd6ee','#8fb0cf','#557394'][Math.floor(rnd()*3)];x.fillRect(i*8+1,j*8+1,6,6)}
+const WT=new THREE.CanvasTexture(wc);WT.wrapS=WT.wrapT=THREE.RepeatWrapping;
+const wt=(rx,ry)=>{const t=WT.clone();t.needsUpdate=true;t.repeat.set(rx,ry);return t};
+function bld(w,h,dp,px,pz,col){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,dp),new THREE.MeshStandardMaterial({color:col||0xffffff,map:wt(w/8,h/14),roughness:.5,metalness:.15}));m.position.set(px,h/2,pz);SC.add(m);return m}
+// ground + roads
+const gnd=new THREE.Mesh(new THREE.PlaneGeometry(1400,1400),new THREE.MeshStandardMaterial({color:0xd8c49a}));gnd.rotation.x=-Math.PI/2;SC.add(gnd);
+const rm=new THREE.MeshStandardMaterial({color:0x2a2f38}),wm=new THREE.MeshBasicMaterial({color:0xf2f2f2});
+[[22,1400],[1400,22]].forEach(([w,h])=>{const r=new THREE.Mesh(new THREE.PlaneGeometry(w,h),rm);r.rotation.x=-Math.PI/2;r.position.y=.05;SC.add(r)});
+for(let i=-600;i<=600;i+=12){if(Math.abs(i)<14)continue;let a=new THREE.Mesh(new THREE.BoxGeometry(.4,.02,5),wm);a.position.set(0,.08,i);SC.add(a);a=new THREE.Mesh(new THREE.BoxGeometry(5,.02,.4),wm);a.position.set(i,.08,0);SC.add(a)}
+// palms
+const tm=new THREE.MeshStandardMaterial({color:0x7a5a38}),lm=new THREE.MeshStandardMaterial({color:0x3f8f4a});
+function palm(px,pz){const t=new THREE.Mesh(new THREE.CylinderGeometry(.25,.4,6,6),tm);t.position.set(px,3,pz);const l=new THREE.Mesh(new THREE.SphereGeometry(2.4,8,6),lm);l.scale.y=.4;l.position.set(px,6.3,pz);SC.add(t,l)}
+for(let i=0;i<9;i++){palm(14,-30-i*22);palm(-14,-30-i*22);palm(30+i*22,14);palm(-30-i*22,-14);if(i<5){palm(14,30+i*22);palm(-14,30+i*22)}}
+// city blocks
+const LM=[[70,-85],[-125,-60],[35,-160],[-55,-45]];
+for(let i=0;i<150;i++){const px=(rnd()-.5)*560,pz=(rnd()-.5)*560;if(Math.abs(px)<22||Math.abs(pz)<22||LM.some(l=>Math.hypot(px-l[0],pz-l[1])<28))continue;bld(9+rnd()*16,8+rnd()*46,9+rnd()*16,px,pz,[0xffffff,0xf1e6d2,0xdde6f0][i%3])}
+// Kingdom Centre
+const ks=new THREE.Shape();ks.moveTo(-13,0);ks.lineTo(13,0);ks.lineTo(13,112);ks.lineTo(-13,112);ks.closePath();
+const kh=new THREE.Path();kh.moveTo(-6.5,68);kh.quadraticCurveTo(0,132,6.5,68);kh.lineTo(-6.5,68);ks.holes.push(kh);
+const kg=new THREE.ExtrudeGeometry(ks,{depth:9,bevelEnabled:false});kg.translate(0,0,-4.5);
+const kc=new THREE.Mesh(kg,new THREE.MeshStandardMaterial({color:0xe6eef8,map:wt(.1,.07),roughness:.4,metalness:.3}));kc.position.set(70,0,-85);kc.rotation.y=-.45;SC.add(kc);
+const kb=new THREE.Mesh(new THREE.BoxGeometry(9,1.2,6),new THREE.MeshStandardMaterial({color:0xffb347,emissive:0xff8a00,emissiveIntensity:.5}));kb.position.set(0,92,0);kc.add(kb);
+// Faisaliyah
+const fb=new THREE.Mesh(new THREE.CylinderGeometry(2.5,7,82,4),new THREE.MeshStandardMaterial({color:0xa9c0dc,map:wt(2,6),metalness:.3}));fb.rotation.y=Math.PI/4;fb.position.set(-125,41,-60);SC.add(fb);
+const fs=new THREE.Mesh(new THREE.SphereGeometry(4.6,16,12),new THREE.MeshStandardMaterial({color:0xf0b84a,emissive:0x664400}));fs.position.set(-125,76,-60);SC.add(fs);
+const fp=new THREE.Mesh(new THREE.ConeGeometry(1.4,24,8),new THREE.MeshStandardMaterial({color:0xcfd8e6}));fp.position.set(-125,95,-60);SC.add(fp);
+// KAFD tower
+const kf=new THREE.Mesh(new THREE.CylinderGeometry(4,10,135,5),new THREE.MeshStandardMaterial({color:0x9fc0e2,map:wt(2,9),metalness:.35,roughness:.3}));kf.position.set(35,67,-160);SC.add(kf);
+// Najm tower + sign
+const NT=V(-55,70,-45);bld(14,70,14,NT.x,NT.z,0xeef4fb);
+const sc=document.createElement('canvas');sc.width=512;sc.height=128;const s2=sc.getContext('2d');s2.fillStyle='#0b2a22';s2.fillRect(0,0,512,128);s2.font='bold 66px Tahoma,sans-serif';s2.textAlign='center';s2.fillStyle='#22d39a';s2.fillText('✦ نجم الشمال',256,88);
+[[0,1],[1,0]].forEach(([a,b])=>{const sg=new THREE.Mesh(new THREE.PlaneGeometry(12,3),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc)}));sg.position.set(NT.x+a*7.05,56,NT.z+b*7.05);if(a)sg.rotation.y=Math.PI/2;SC.add(sg)});
+// solar station
+const SG=new THREE.Group();SG.position.copy(NT);SC.add(SG);
+const sb=new THREE.Mesh(new THREE.CylinderGeometry(10.5,11,1.2,6),new THREE.MeshStandardMaterial({color:0x2c3a52,metalness:.5,roughness:.4}));sb.position.y=.6;SG.add(sb);
+const mt=new THREE.MeshStandardMaterial({color:0xdfe8f6,metalness:.6,roughness:.3});
+const col=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.6,1,20),mt);SG.add(col);
+const pad=new THREE.Mesh(new THREE.CylinderGeometry(3.2,3.2,.3,32),new THREE.MeshStandardMaterial({color:0x0f6a52,emissive:0x0a3a2e}));SG.add(pad);
+const pr=new THREE.Mesh(new THREE.TorusGeometry(3.2,.1,8,48),new THREE.MeshBasicMaterial({color:0x22d39a}));pr.rotation.x=Math.PI/2;SG.add(pr);
+const pc=document.createElement('canvas');pc.width=pc.height=64;const p2=pc.getContext('2d');p2.fillStyle='#12306b';p2.fillRect(0,0,64,64);p2.strokeStyle='#7fa6e6';p2.lineWidth=2;for(let i=0;i<=64;i+=16){p2.beginPath();p2.moveTo(i,0);p2.lineTo(i,64);p2.moveTo(0,i);p2.lineTo(64,i);p2.stroke()}
+const pm=new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(pc),metalness:.6,roughness:.25,emissive:0x0a1a40}),hinges=[];
+for(let k=0;k<6;k++){const a=k*Math.PI/3,pv=new THREE.Group();pv.position.set(Math.cos(a)*3.8,1.3,Math.sin(a)*3.8);pv.rotation.y=-a;const h=new THREE.Group();pv.add(h);const m=new THREE.Mesh(new THREE.BoxGeometry(5,.14,4),pm);m.position.x=2.5;h.add(m);SG.add(pv);hinges.push(h)}
+const mast=new THREE.Mesh(new THREE.CylinderGeometry(.18,.25,9,8),mt);mast.position.set(Math.cos(Math.PI/6)*9.7,5,Math.sin(Math.PI/6)*9.7);SG.add(mast);
+const bcn=new THREE.Mesh(new THREE.SphereGeometry(.55,12,12),new THREE.MeshBasicMaterial({color:0xff3b2e}));bcn.position.set(mast.position.x,9.8,mast.position.z);SG.add(bcn);
+const bl=new THREE.PointLight(0xff3b2e,2,40);bl.position.copy(bcn.position);SG.add(bl);
+// drone
+const drone=new THREE.Group(),rotors=[];SC.add(drone);drone.scale.setScalar(1.4);
+const dm=new THREE.MeshStandardMaterial({color:0x1b2338,metalness:.6,roughness:.35});
+drone.add(new THREE.Mesh(new THREE.BoxGeometry(1,.35,1.3),dm));
+const ey=new THREE.Mesh(new THREE.SphereGeometry(.18,10,10),new THREE.MeshBasicMaterial({color:0x22d39a}));ey.position.set(0,-.2,.55);drone.add(ey);
+[[1,1],[-1,1],[1,-1],[-1,-1]].forEach(([a,b])=>{const arm=new THREE.Mesh(new THREE.BoxGeometry(1.1,.12,.12),dm);arm.position.set(a*.7,.05,b*.7);arm.rotation.y=a*b*Math.PI/4;drone.add(arm);
+const r=new THREE.Group();r.position.set(a*1.05,.18,b*1.05);const ds=new THREE.Mesh(new THREE.CircleGeometry(.62,20),new THREE.MeshBasicMaterial({color:0xcfefff,transparent:true,opacity:.4,side:THREE.DoubleSide}));ds.rotation.x=-Math.PI/2;r.add(ds);r.add(new THREE.Mesh(new THREE.BoxGeometry(1.2,.03,.1),new THREE.MeshBasicMaterial({color:0x223})));drone.add(r);rotors.push(r)});
+const hc=document.createElement('canvas');hc.width=hc.height=64;const h2=hc.getContext('2d'),gr=h2.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(34,211,154,.9)');gr.addColorStop(1,'rgba(34,211,154,0)');h2.fillStyle=gr;h2.fillRect(0,0,64,64);
+const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(hc),transparent:true,depthWrite:false}));halo.scale.set(9,9,1);drone.add(halo);
+// cars
+function mkCar(c){const g=new THREE.Group(),b=new THREE.Mesh(new THREE.BoxGeometry(2.2,.8,5),new THREE.MeshStandardMaterial({color:c,roughness:.3,metalness:.5}));b.position.y=.8;g.add(b);
+const cb=new THREE.Mesh(new THREE.BoxGeometry(1.9,.7,2.6),new THREE.MeshStandardMaterial({color:0x23324a,roughness:.1,metalness:.7}));cb.position.set(0,1.55,-.2);g.add(cb);
+[[1.1,1.6],[-1.1,1.6],[1.1,-1.6],[-1.1,-1.6]].forEach(([a,z])=>{const w=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.3,14),new THREE.MeshStandardMaterial({color:0x111}));w.rotation.z=Math.PI/2;w.position.set(a,.45,z);g.add(w)});
+g.haz=[[1,2.5],[-1,2.5],[1,-2.5],[-1,-2.5]].map(([a,z])=>{const l=new THREE.Mesh(new THREE.BoxGeometry(.4,.25,.15),new THREE.MeshBasicMaterial({color:0xffa31a}));l.position.set(a,.9,z);g.add(l);return l});return g}
+const cA=mkCar(0xf4f4f4),cB=mkCar(0x8a1f1f);SC.add(cA,cB);
+const CC=V(-.3,0,-.5);
+function crash(p){const q=C(p/.55),r=p<.55?0:E(C((p-.55)/.45));
+cA.position.set(.8*r,0,-45+41.4*q+1.4*r);cA.rotation.y=.25*r;cA.scale.z=p<.55?1:.92;
+cB.position.set(45-45.5*q-2.5*r,0,2.4*r);cB.rotation.y=-Math.PI/2+.55*r;
+const bk=p>=.55&&Math.sin(performance.now()/150)>0;[...cA.haz,...cB.haz].forEach(l=>l.visible=bk);}
+crash(1);cA.updateMatrixWorld(true);cB.updateMatrixWorld(true);
+// point cloud
+const N=2800,pos=new Float32Array(N*3),cl=new Float32Array(N*3),pts=[];
+for(let i=0;i<N;i++){const car=i%2?cA:cB,u=[rnd(),rnd(),rnd()],f=Math.floor(rnd()*6);let l=V((u[0]-.5)*2.4,u[1]*1.9,(u[2]-.5)*5.2);if(f<2)l.x=f?1.2:-1.2;else if(f<4)l.z=f===2?2.6:-2.6;else l.y=f===4?1.9:1.2;pts.push(car.localToWorld(l))}
+pts.sort((a,b)=>a.z-b.z);const cc=new THREE.Color();pts.forEach((v,i)=>{pos.set([v.x,v.y,v.z],i*3);cc.setHSL(.45-v.y*.12,1,.5);cl.set([cc.r,cc.g,cc.b],i*3)});
+const cg=new THREE.BufferGeometry();cg.setAttribute('position',new THREE.BufferAttribute(pos,3));cg.setAttribute('color',new THREE.BufferAttribute(cl,3));
+const cloud=new THREE.Points(cg,new THREE.PointsMaterial({size:.22,vertexColors:true}));SC.add(cloud);$('np').textContent=N.toLocaleString('ar');
+const curt=new THREE.Mesh(new THREE.PlaneGeometry(10,3.4),new THREE.MeshBasicMaterial({color:0x22ffaa,transparent:true,opacity:.28,side:THREE.DoubleSide,depthWrite:false}));curt.position.y=1.7;SC.add(curt);
+const cone=new THREE.Mesh(new THREE.CylinderGeometry(4,.2,1,24,1,true).rotateX(Math.PI/2).translate(0,0,.5),new THREE.MeshBasicMaterial({color:0x22ffaa,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false}));SC.add(cone);
+const imp=new THREE.Mesh(new THREE.TorusGeometry(2.4,.12,8,40),new THREE.MeshBasicMaterial({color:0xff3b2e}));imp.rotation.x=Math.PI/2;imp.position.set(CC.x,.3,CC.z);SC.add(imp);
+const smoke=[];for(let i=0;i<8;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.9,10,10),new THREE.MeshBasicMaterial({color:0x555b66,transparent:true,opacity:.4}));SC.add(m);smoke.push(m)}
+const pk=[];for(let i=0;i<6;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.4,8,8),new THREE.MeshBasicMaterial({color:0x22d39a}));SC.add(m);pk.push(m)}
+// camera
+let dp=V(0,0,0),pp=0;const a0=Math.atan2(NT.z-CC.z,NT.x-CC.x),PAD=l=>V(NT.x,NT.y+1.6+l,NT.z),HV=a=>V(CC.x+Math.cos(a)*11,12,CC.z+Math.sin(a)*11);
+const CP=[()=>V(24,9,30),()=>V(-38,78,-26),()=>V(-40,80,-30),()=>V(-42,80,-28),()=>dp.clone().add(V(16,7,18)),()=>V(22,10,24),()=>V(14,7,17),()=>V(16,9,20),()=>dp.clone().add(V(18,8,20))];
+const CT=[()=>V(0,1.5,0),()=>V(-55,71,-45),()=>V(-55,74,-45),()=>dp,()=>dp,()=>V(-1,3,0),()=>V(-1,1.5,0),()=>V(-1,2,0),()=>dp];
+const ct=V(0,1,0);cam.position.set(24,9,30);
+// UI
+STEPS.forEach((_,i)=>{const e=document.createElement('i');e.textContent=i+1;e.onclick=()=>{T=ST[i]+.01};$('dots').appendChild(e)});
+let T=0,playing=true,last=performance.now(),cur=-1;
+$('playb').onclick=()=>{playing=!playing;$('playb').textContent=playing?'إيقاف':'تشغيل'};
+const go=d=>{T=ST[Math.max(0,Math.min(8,cur+d))]+.01};$('prevb').onclick=()=>go(-1);$('nextb').onclick=()=>go(1);
+const lbs=[[$('l1'),()=>cA.position.clone().add(V(0,3.2,0))],[$('l2'),()=>cB.position.clone().add(V(0,3.2,0))],[$('l3'),()=>V(CC.x,.8,CC.z)]];
+function frame(now){const dt=Math.min(.05,(now-last)/1e3);last=now;if(playing){T+=dt;if(T>=TOT)T=0}
+let s=0;while(s<8&&T>=ST[s]+D[s])s++;const p=C((T-ST[s])/D[s]);pp=p;
+if(s!==cur){cur=s;$('ttl').textContent=STEPS[s][0];$('dsc').textContent=STEPS[s][1];[...$('dots').children].forEach((e,i)=>e.className=i===s?'on':i<s?'done':'')}
+$('fillb').style.width=(T/TOT*100)+'%';
+crash(s===0?p:1);
+const open=s<1?0:s===1?E(p):s<8?1:p<.85?1:1-E((p-.85)/.15);
+hinges.forEach((h,k)=>h.rotation.z=1.35-1.21*E(C(open*1.5-k*.08)));
+const lift=s<2?0:s===2?E(p):s<8?1:p<.65?1:1-E(C((p-.65)/.2));const LH=5*lift;
+col.scale.y=.1+LH;col.position.y=.6+(.1+LH)/2;pad.position.y=1.2+LH;pr.position.y=1.4+LH;
+const up=PAD(5).add(V(0,5,0));let Dp=PAD(LH);
+if(s===3)Dp=PAD(5).lerp(up,E(p));
+else if(s===4){Dp=up.clone().lerp(HV(a0),E(p));Dp.y+=Math.sin(Math.PI*p)*12}
+else if(s===5)Dp=HV(a0+E(p)*1.5);
+else if(s===6||s===7)Dp=HV(a0+1.5);
+else if(s===8){const H=HV(a0+1.5);if(p<.5){Dp=H.lerp(up,E(p/.5));Dp.y+=Math.sin(Math.PI*p/.5)*8}else if(p<.65)Dp=up.clone().lerp(PAD(5),E((p-.5)/.15));else Dp=PAD(LH)}
+if(s===3&&p<.01)Dp=PAD(5);
+if(s<3)Dp=PAD(LH);
+dp=Dp;drone.position.copy(Dp);const fly=s>=3&&!(s===8&&p>.65);
+drone.rotation.y=(s>=4&&s<=7)?Math.atan2(CC.x-Dp.x,CC.z-Dp.z):0;
+rotors.forEach((r,i)=>r.rotation.y+=(fly?1.6:.1)*(i%2?1:-1));
+if(fly)drone.position.y+=Math.sin(now/300)*.15;halo.visible=fly;
+const red=s<2||(s===0),cc2=s===0&&p<.55?0x4fd8ff:s<3?0xff3b2e:s===8&&p>.7?0x22ff88:0x22d39a;bcn.material.color.setHex(cc2);bl.color.setHex(cc2);
+const bk=s<3?(Math.sin(now/120)>0?1:.1):1;bcn.scale.setScalar(bk);bl.intensity=2*bk;
+$('alertb').style.opacity=(s===0&&p>.55)||s===1?1:0;
+const bat=s<4?100:s===4?100-3*p:s===5?97-5*p:s===6?92-p:s===7?91:91+9*C(p/.8);$('bat').textContent='☀ طاقة المحطة '+Math.round(bat)+'%'+(s===8&&p>.3?' · شحن':'');
+// smoke
+smoke.forEach((m,i)=>{const on=(s===0&&p>.55)||s>0&&s<8;m.visible=on;const q=((now/3000+i/8)%1);m.position.set(CC.x+Math.sin(i*2)*.8+q*2,.8+q*7,CC.z+Math.cos(i*3)*.6);m.scale.setScalar(.8+q*2.4);m.material.opacity=.4*(1-q)});
+// scan
+const zs=-6+10*E(C(s===5?p:1));cloud.visible=s>=5&&s<8||(s===8&&p<.2);cg.setDrawRange(0,Math.floor(N*(s<5?0:s===5?E(p):1)));
+curt.visible=cone.visible=s===5;curt.position.z=zs;
+if(s===5){cone.position.copy(Dp);cone.lookAt(CC.x,.5,zs);cone.scale.set(1,1,Dp.distanceTo(V(CC.x,.5,zs)));cone.material.opacity=.12+.06*Math.sin(now/120)}
+imp.visible=s>=6&&s<8;imp.scale.setScalar(1+.2*Math.sin(now/180));
+pk.forEach((m,i)=>{m.visible=s===7;if(s===7)m.position.copy(Dp).lerp(PAD(5),(T*.8+i/6)%1)});
+$('rep').style.opacity=s===7?1:0;
+lbs.forEach(([e,f])=>{const v=f().project(cam);e.style.left=(v.x*.5+.5)*innerWidth+'px';e.style.top=(-v.y*.5+.5)*innerHeight+'px';e.style.opacity=(s===6||s===7)&&v.z<1?1:0});
+cam.position.lerp(CP[s]().add(V(Math.sin(now/3000)*2,0,Math.cos(now/3000)*2)),.035);ct.lerp(CT[s](),.05);cam.lookAt(ct);
+R.render(SC,cam);requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
